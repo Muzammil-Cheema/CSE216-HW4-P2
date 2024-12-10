@@ -8,7 +8,7 @@ class Group(ABC, Generic[T]):
 
     @abstractmethod
     def binary_operation(self, a: T, b: T) -> T:
-        pass;
+        pass
 
     @abstractmethod
     def identity(self) -> T:
@@ -27,7 +27,7 @@ class Group(ABC, Generic[T]):
 class BijectionGroup(Group[Callable[[T], T]]):
 
     def __init__(self, s: Set[T]):
-        pass
+        self.domain = s
 
     def binary_operation(self, f: Callable[[T], T], g: Callable[[T], T]) -> Callable[[T], T]:
         return lambda x: f(g(x))
@@ -36,11 +36,12 @@ class BijectionGroup(Group[Callable[[T], T]]):
         return lambda x: x
 
     def inverse_of(self, f: Callable[[T], T]) -> Callable[[T], T]:
-        return f
+        inverse = {f(x): x for x in self.domain}
+        return lambda x: inverse[x]
 
     @staticmethod
     def bijection_group(domain: Set[T]) -> Group[Callable[[T], T]]:
-        return BijectionGroup[Callable[[T], T]](domain)
+        return BijectionGroup(domain)
 
     @staticmethod
     def bijections_of(s: Set[T]) -> set[Callable[[T], T]]:
@@ -48,10 +49,10 @@ class BijectionGroup(Group[Callable[[T], T]]):
             if len(bijection) == len(elements):
                 arrangements.append(bijection)
             else:
-                for i in range(len(elements)):
-                    if bijection.__contains__(elements[i]):
+                for e in elements:
+                    if bijection.__contains__(e):
                         continue
-                    bijection.append(elements[i])
+                    bijection.append(e)
                     permute(elements, arrangements, bijection.copy())
                     bijection.pop()
 
@@ -65,7 +66,7 @@ class BijectionGroup(Group[Callable[[T], T]]):
             mapping = dict()
             for i in range(len(p)):
                 mapping[set_list[i]] = p[i]
-            bijections.add(lambda x, m=mapping: m[x])   #m=mapping ensures each function has a different mapping
+            bijections.add(lambda x, m=mapping: m[x])   #m=mapping ensures each function starts with a new, unaltered map
 
         return bijections
 
@@ -82,17 +83,21 @@ if __name__ == "__main__":
     test_bijections: Set[Callable[[int], int]] = BijectionGroup.bijections_of(three_ints)
     print_bijections(test_bijections, three_ints)
 
+
     g = BijectionGroup.bijection_group(three_ints)
     f1 = BijectionGroup.bijections_of(three_ints).pop()
     f2 = g.inverse_of(f1)
     identity = g.identity()
+
     for n in three_ints:
         print(f"{n} --> {f1(n)}", end="; ")
     print()
+
     for n in three_ints:
         print(f"{n} --> {f2(n)}", end="; ")
     print()
+
     for n in three_ints:
-        print(f"{n} --> {identity(n)}", end="; ")
+        print(f"{n} --> {g.binary_operation(f1, f2)(n)}", end="; ")
     print()
 
