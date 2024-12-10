@@ -15,7 +15,7 @@ class Group(ABC, Generic[T]):
         pass
 
     @abstractmethod
-    def inverse(self, a: T) -> T:
+    def inverse_of(self, a: T) -> T:
         pass
 
     def exponent(self, a: T, k: int) -> T:
@@ -26,19 +26,21 @@ class Group(ABC, Generic[T]):
 
 class BijectionGroup(Group[Callable[[T], T]]):
 
+    def __init__(self, s: Set[T]):
+        pass
+
     def binary_operation(self, f: Callable[[T], T], g: Callable[[T], T]) -> Callable[[T], T]:
         return lambda x: f(g(x))
 
     def identity(self) -> Callable[[T], T]:
         return lambda x: x
 
-    def inverse(self, f: Callable[[T], T]) -> Callable[[T], T]:
+    def inverse_of(self, f: Callable[[T], T]) -> Callable[[T], T]:
         return f
 
     @staticmethod
-    def bijection_group():
-        return BijectionGroup
-
+    def bijection_group(domain: Set[T]) -> Group[Callable[[T], T]]:
+        return BijectionGroup[Callable[[T], T]](domain)
 
     @staticmethod
     def bijections_of(s: Set[T]) -> set[Callable[[T], T]]:
@@ -79,4 +81,18 @@ if __name__ == "__main__":
     three_ints: Set[int] = {1, 2, 3}
     test_bijections: Set[Callable[[int], int]] = BijectionGroup.bijections_of(three_ints)
     print_bijections(test_bijections, three_ints)
+
+    g = BijectionGroup.bijection_group(three_ints)
+    f1 = BijectionGroup.bijections_of(three_ints).pop()
+    f2 = g.inverse_of(f1)
+    identity = g.identity()
+    for n in three_ints:
+        print(f"{n} --> {f1(n)}", end="; ")
+    print()
+    for n in three_ints:
+        print(f"{n} --> {f2(n)}", end="; ")
+    print()
+    for n in three_ints:
+        print(f"{n} --> {identity(n)}", end="; ")
+    print()
 
