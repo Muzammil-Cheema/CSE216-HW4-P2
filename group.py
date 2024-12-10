@@ -1,10 +1,13 @@
 from abc import ABC, abstractmethod
-from typing import TypeVar, Generic
+from typing import TypeVar, Generic, Callable, Set
+
 T = TypeVar('T')
 
+
 class Group(ABC, Generic[T]):
+
     @abstractmethod
-    def binary_operation(self, f: T, g: T) -> T:
+    def binary_operation(self, a: T, b: T) -> T:
         pass;
 
     @abstractmethod
@@ -12,10 +15,68 @@ class Group(ABC, Generic[T]):
         pass
 
     @abstractmethod
-    def inverse(self, f: T) -> T:
+    def inverse(self, a: T) -> T:
         pass
 
-    def exponent(self, f: T, k: int) -> T:
+    def exponent(self, a: T, k: int) -> T:
         if k < 0:
             raise ValueError('k must be positive')
-        return self.identity() if k == 0 else self.binary_operation(f, self.exponent(f, k-1))
+        return self.identity() if k == 0 else self.binary_operation(a, self.exponent(a, k - 1))
+
+
+class BijectionGroup(Group[Callable[[T], T]]):
+
+    def binary_operation(self, f: Callable[[T], T], g: Callable[[T], T]) -> Callable[[T], T]:
+        return lambda x: f(g(x))
+
+    def identity(self) -> Callable[[T], T]:
+        return lambda x: x
+
+    def inverse(self, f: Callable[[T], T]) -> Callable[[T], T]:
+        return f
+
+    @staticmethod
+    def bijection_group():
+        return BijectionGroup
+
+
+    @staticmethod
+    def bijections_of(s: Set[T]) -> set[Callable[[T], T]]:
+        def permute(elements: list[T], arrangements: list[list[T]], bijection: list[T]):
+            if len(bijection) == len(elements):
+                arrangements.append(bijection)
+            else:
+                for i in range(len(elements)):
+                    if bijection.__contains__(elements[i]):
+                        continue
+                    bijection.append(elements[i])
+                    permute(elements, arrangements, bijection.copy())
+                    bijection.pop()
+
+
+        set_list = list(s)
+        permutations = list()
+        bijections = set()
+        permute(set_list, permutations, [])
+
+        for p in permutations:
+            mapping = dict()
+            for i in range(len(p)):
+                mapping[set_list[i]] = p[i]
+            bijections.add(lambda x, m=mapping: m[x])   #m=mapping ensures each function has a different mapping
+
+        return bijections
+
+
+def print_bijections(bijections: Set[Callable[[T], T]], a_few: Set[T]) -> None:
+    for a_bijection in bijections:
+        for n in a_few:
+            print(f"{n} --> {a_bijection(n)}", end="; ")
+        print()
+
+
+if __name__ == "__main__":
+    three_ints: Set[int] = {1, 2, 3}
+    test_bijections: Set[Callable[[int], int]] = BijectionGroup.bijections_of(three_ints)
+    print_bijections(test_bijections, three_ints)
+
